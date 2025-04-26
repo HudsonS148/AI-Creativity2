@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AI vs Human Creativity Challenge</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; background: linear-gradient(to right, #0f2027, #203a43, #2c5364); color: #f0f0f0; }
+    .section { margin: 40px auto; max-width: 800px; background-color: rgba(255, 255, 255, 0.05); border: 1px solid #2b5876; border-radius: 16px; padding: 30px; box-shadow: 0 0 20px rgba(0, 255, 255, 0.2); }
+    h2 { color: #00ffff; text-align: center; }
+    textarea { width: 100%; height: 120px; padding: 10px; font-size: 16px; border-radius: 10px; background-color: #1a1a2e; color: #00ffff; border: none; resize: none; }
+    button { background-color: #00ffff; color: #0f2027; border: none; padding: 10px 20px; margin-top: 15px; font-size: 16px; border-radius: 12px; cursor: pointer; }
+    button:hover { background-color: #00cccc; }
+    .word-counter { text-align: right; margin-top: 5px; font-size: 14px; color: #00cccc; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+
+<div class="section prompt" id="promptSection">
+  <h2>🌌 Creative Prompt</h2>
+  <p id="promptText">Loading prompt...</p>
+  <p><em>Please respond in 25 words or fewer.</em></p>
+  <textarea id="userResponse" oninput="limitWords(this, 25)"></textarea>
+  <div class="word-counter"><span id="wordCount">0</span> / 25 words</div>
+  <button onclick="submitResponse()">Submit Response</button>
+</div>
+
+<div class="section hidden" id="comparisonSection">
+  <h2>🎭 Compare Responses</h2>
+  <p id="comparisonPrompt"></p>
+  <p><strong>A:</strong> <span id="responseA"></span></p>
+  <p><strong>B:</strong> <span id="responseB"></span></p>
+  <h3>Which response is more creative?</h3>
+  <button onclick="vote('A')">A</button>
+  <button onclick="vote('B')">B</button>
+  <h3>Which response do you think is AI?</h3>
+  <button onclick="guess('A')">A</button>
+  <button onclick="guess('B')">B</button>
+  <p id="feedback"></p>
+  <button class="hidden" id="nextPromptBtn" onclick="nextRound()">Next Prompt</button>
+</div>
+
+<div class="section hidden" id="resultsSection">
+  <h2>📊 Your Results</h2>
+  <p id="resultsSummary"></p>
+  <canvas id="resultsChart" width="400" height="200"></canvas>
+  <button onclick="restartGame()">Restart Game</button>
+</div>
+
+<script>
+const prompts = [
+  "Describe a world where time flows backward.",
+  "Invent a holiday that takes place in space.",
+  "Imagine if animals could talk for one day. What would happen?",
+  "Write a fairy tale about a misunderstood villain.",
+  "Create a superhero with a ridiculous but useful power.",
+  "What if gravity stopped working for one hour each day?",
+  "Describe a city run entirely by children.",
+  "What would a school for dragons be like?",
+  "Tell a story from the perspective of a forgotten sock.",
+  "Design a vacation for aliens visiting Earth for the first time."
+];
+
+const aiResponses = {
+  "Describe a world where time flows backward.": "Memories vanish. Rain floats skyward. Goodbyes become hellos. The end always comes first.",
+  "Invent a holiday that takes place in space.": "StarUnity Day: zero-G dances, galactic food, and asteroid races unite the planets.",
+  "Imagine if animals could talk for one day. What would happen?": "Animals revolt, spill secrets. Humans laugh, cry, and promise to listen more.",
+  "Write a fairy tale about a misunderstood villain.": "The dragon just wanted to garden, but villagers feared his flames. A princess saw through scales to the rose-loving heart beneath.",
+  "Create a superhero with a ridiculous but useful power.": "Captain Nap: puts villains to sleep instantly. Crime drops. Toddlers nap. Cities quiet. Ridiculous? Effective? Absolutely.",
+  "What if gravity stopped working for one hour each day?": "Balloons rule the sky. Cows float over fences. Gravity returns, and chaos becomes comedy, like Earth’s daily breath.",
+  "Describe a city run entirely by children.": "Candy laws. Bedtime riots. Creativity governs, mess thrives. Learning happens through chaos, and laughter echoes in city halls of pillows.",
+  "What would a school for dragons be like?": "Fire-breathing 101, wing etiquette, treasure ethics. Teachers char chalkboards. Homework burns. Graduation is a sky-painting flyover.",
+  "Tell a story from the perspective of a forgotten sock.": "Under the bed, I mourn my twin. Dustball pals, lint love stories. Someday, the vacuum finds me. I dream of warmth again.",
+  "Design a vacation for aliens visiting Earth for the first time.": "Hover tours of volcanos. Deep-sea symphonies. Mountain-top stargazing. One Earth taco, and they apply for citizenship."
+};
+
+let currentPrompt = "";
+let userText = "";
+let aiFirst = false;
+let round = 0;
+let correctGuesses = 0;
+let aiWins = 0;
+
+function limitWords(el, maxWords) {
+  const words = el.value.split(/\s+/);
+  if (words.length > maxWords) {
+    el.value = words.slice(0, maxWords).join(" ");
+  }
+  document.getElementById("wordCount").textContent = el.value.trim() === "" ? 0 : el.value.trim().split(/\s+/).length;
+}
+
+function generatePrompt() {
+  const randomIndex = Math.floor(Math.random() * prompts.length);
+  currentPrompt = prompts[randomIndex];
+  document.getElementById("promptText").textContent = currentPrompt;
+}
+
+function submitResponse() {
+  userText = document.getElementById("userResponse").value.trim();
+  if (!userText) return alert("Please write a response.");
+
+  aiFirst = Math.random() > 0.5;
+
+  document.getElementById("promptSection").classList.add("hidden");
+  document.getElementById("comparisonSection").classList.remove("hidden");
+
+  document.getElementById("comparisonPrompt").textContent = currentPrompt;
+  document.getElementById("responseA").textContent = aiFirst ? aiResponses[currentPrompt] : userText;
+  document.getElementById("responseB").textContent = aiFirst ? userText : aiResponses[currentPrompt];
+
+  document.getElementById("feedback").textContent = "";
+  document.getElementById("nextPromptBtn").classList.add("hidden");
+}
+
+function vote(choice) {
+  if ((aiFirst && choice === 'A') || (!aiFirst && choice === 'B')) aiWins++;
+  document.getElementById("feedback").textContent = `✔️ You voted for ${choice}. Now guess which is AI.`;
+}
+
+function guess(choice) {
+  if ((aiFirst && choice === 'A') || (!aiFirst && choice === 'B')) correctGuesses++;
+  document.getElementById("feedback").textContent += ` You guessed: ${choice}. ✔️ Round ${round + 1} complete.`;
+  document.getElementById("nextPromptBtn").classList.remove("hidden");
+}
+
+function nextRound() {
+  round++;
+  if (round >= 10) {
+    showResults();
+  } else {
+    document.getElementById("comparisonSection").classList.add("hidden");
+    document.getElementById("promptSection").classList.remove("hidden");
+    document.getElementById("userResponse").value = "";
+    document.getElementById("wordCount").textContent = "0";
+    generatePrompt();
+  }
+}
+
+function showResults() {
+  document.getElementById("comparisonSection").classList.add("hidden");
+  document.getElementById("resultsSection").classList.remove("hidden");
+  document.getElementById("resultsSummary").innerText = `You correctly identified AI responses ${correctGuesses}/10 times and rated AI more creative ${aiWins}/10 times.`;
+
+  const ctx = document.getElementById('resultsChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Your AI Guesses', 'Your AI Votes', 'Global AI Guesses (avg)', 'Global AI Votes (avg)'],
+      datasets: [{
+        label: 'Results',
+        data: [correctGuesses, aiWins, 6, 5],
+        backgroundColor: ['#00ffff', '#00cccc', '#9999ff', '#ff99cc']
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: { y: { beginAtZero: true, max: 10 } }
+    }
+  });
+}
+
+function restartGame() {
+  round = 0;
+  correctGuesses = 0;
+  aiWins = 0;
+  document.getElementById("resultsSection").classList.add("hidden");
+  document.getElementById("promptSection").classList.remove("hidden");
+  document.getElementById("userResponse").value = "";
+  document.getElementById("wordCount").textContent = "0";
+  generatePrompt();
+}
+
+window.onload = () => {
+  document.getElementById("promptSection").classList.remove("hidden");
+  generatePrompt();
+};
+</script>
+
+</body>
+</html>
